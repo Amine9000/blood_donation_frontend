@@ -1,0 +1,40 @@
+{
+  "descriptors": {
+    "Home-pa3WYUC3Gm8j44xHNfrwG": {
+      "navigation": [],
+      "options": [],
+      "render": [],
+      "route": []
+    },
+    "Settings-iK99yvdYjDQ8WUK24sYAz": {
+      "navigation": [],
+      "options": [],
+      "render": [],
+      "route": []
+    }
+  },
+  "insets": { "bottom": 0, "left": 0, "right": 0, "top": 25.714284896850586 },
+  "navigation": {
+    "canGoBack": [],
+    "dispatch": [],
+    "emit": [],
+    "getId": [],
+    "getParent": [],
+    "getState": [],
+    "goBack": [],
+    "isFocused": [],
+    "jumpTo": [],
+    "navigate": [],
+    "reset": [],
+    "setParams": []
+  },
+  "state": {
+    "history": [[]],
+    "index": 0,
+    "key": "tab-pvsKk5WI41P4P2h14kQoB",
+    "routeNames": ["Home", "Settings"],
+    "routes": [[], []],
+    "stale": false,
+    "type": "tab"
+  }
+}
