@@ -11,29 +11,29 @@ import {
 } from "react-native";
 import FeatherIcon from "react-native-vector-icons/Feather";
 import NavBarNoSearch from "../components/NavBarNoSearch";
-import { useSelector } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { randomColor } from "../utils/utilities";
+import axios from "axios";
+import HOST_LINK from "../constants/constants";
+import { addRdv } from "../redux/slices/userSlice";
 
-const options = {
+export const options = {
   year: "numeric",
   month: "short",
   day: "numeric",
-  hour: "numeric",
-  minute: "numeric",
-  hour12: false,
 };
 
 const CARD_WIDTH = Math.min(Dimensions.get("screen").width * 0.95, 400);
 
 export default function Profile() {
   const user = useSelector((state) => state.user);
+  const dispatch = useDispatch();
   const [stats, setStats] = useState([
     { label: "total", value: 0 },
     { label: "level", value: "Gold" },
   ]);
-
+  const [rdvs, setRdvs] = useState([]);
   useEffect(() => {
-    console.log(user.rdvs)
     setStats([
       {
         label: "total",
@@ -45,6 +45,39 @@ export default function Profile() {
       },
     ]);
   }, [user]);
+  useEffect(() => {
+    getRdvs();
+  }, [user.id]);
+
+  useEffect(() => {
+    setRdvs(user.rdvs);
+  }, [user.rdvs]);
+
+  async function getRdvs() {
+    if (user && user.id) {
+      try {
+        axios
+          .get(`${HOST_LINK}/users/${user.id}/rdvs`, {
+            headers: {
+              Authorization: `Bearer ${user.access_token}`,
+            },
+          })
+          .then((res) => {
+            dispatch(addRdv({ rdvs: res.data }));
+            setRdvs(res.data);
+          })
+          .catch((err) => {
+            console.error(
+              "here ",
+              err.response ? err.response.data : err.message
+            );
+          });
+      } catch (error) {
+        console.error("here 2 ", error.message);
+      }
+    }
+  }
+
   const { bgColor, textColor } = randomColor();
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: "#f4f4f4" }}>
@@ -103,7 +136,9 @@ export default function Profile() {
                 >
                   <Text style={styles.statsItemText}>{label}</Text>
 
-                  <Text style={styles.statsItemValue}>{value}</Text>
+                  <Text style={styles.statsItemValue}>
+                    {value ? value : "unkown"}
+                  </Text>
                 </View>
               ))}
             </View>
@@ -111,15 +146,15 @@ export default function Profile() {
 
           <View style={styles.list}>
             <View style={styles.listHeader}>
-              <Text style={styles.listTitle}>My History</Text>
+              <Text style={styles.listTitle}>History</Text>
             </View>
 
             <ScrollView
               contentContainerStyle={styles.listContent}
               showsHorizontalScrollIndicator={false}
             >
-              {user.rdvs &&
-                user.rdvs.map(({ center, date, blood_in_mils }, index) => (
+              {rdvs &&
+                rdvs.map(({ center, date, blood_in_mils }, index) => (
                   <View style={styles.card} key={index}>
                     <View style={styles.cardTop}>
                       <View style={styles.cardIcon}>
@@ -130,7 +165,7 @@ export default function Profile() {
                         <Text style={styles.cardTitle}>{center.label}</Text>
 
                         <Text style={styles.cardSubtitle}>
-                          {blood_in_mils} pph
+                          {blood_in_mils} ml
                         </Text>
                       </View>
                     </View>
@@ -148,7 +183,7 @@ export default function Profile() {
                     </View>
                   </View>
                 ))}
-              {(user.rdvs == undefined || user.rdvs == []) && (
+              {rdvs == [] && (
                 <Text style={{ color: "#999" }}>No donations yet.</Text>
               )}
             </ScrollView>

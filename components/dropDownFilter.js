@@ -1,7 +1,18 @@
 import { AntDesign } from "@expo/vector-icons";
-import React, { useState } from "react";
-import { View, Text, StyleSheet } from "react-native";
+import axios from "axios";
+import React, { useEffect, useState } from "react";
+import { View, StyleSheet, Dimensions } from "react-native";
 import { Dropdown } from "react-native-element-dropdown";
+import HOST_LINK from "../constants/constants";
+import { useDispatch, useSelector } from "react-redux";
+import {
+  getCentersSuccess,
+  getRegionsFailure,
+  getRegionsSuccess,
+  getVillesSuccess,
+} from "../redux/slices/centersSlice";
+
+const WIDTH = Dimensions.get("window").width;
 
 const data = [
   { label: "Item 1", value: "1" },
@@ -15,56 +26,68 @@ const data = [
 ];
 
 export default function DropdownFilter() {
+  const user = useSelector((state) => state.user);
+  const dispatch = useDispatch();
+  const [centers, setCenters] = useState([]);
+  const [regions, setRegions] = useState([]);
+  const [villes, setVilles] = useState([]);
   const [valueRegion, setValueRegion] = useState(null);
+  const [idRegion, setIdRegion] = useState(1);
   const [isFocusRegion, setIsFocusRegion] = useState(false);
 
   const [valueVille, setValueVille] = useState(null);
   const [isFocusVille, setIsFocusVille] = useState(false);
 
-  const renderLabelRegion = () => {
-    if (valueRegion || isFocusRegion) {
-      return (
-        <Text style={[styles.label, isFocusRegion && { color: "blue" }]}>
-          choose region
-        </Text>
-      );
-    }
-    return null;
-  };
+  useEffect(() => {
+    getRegion();
+  }, [valueRegion]);
 
-  const renderLabelVille = () => {
-    if (valueVille || isFocusVille) {
-      return (
-        <Text style={[styles.label, isFocusVille && { color: "blue" }]}>
-          choose city
-        </Text>
+  async function getRegion() {
+    try {
+      const res = await axios.get(`${HOST_LINK}/regions`, {
+        headers: {
+          Authorization: `Bearer ${user.access_token}`,
+        },
+      });
+      dispatch(
+        getRegionsSuccess({
+          regions: res.data,
+        })
       );
+      setRegions(res.data);
+      dispatch(getRegionsSuccess({ regions: res.data }));
+    } catch (err) {
+      console.error(err);
     }
-    return null;
-  };
+  }
 
   return (
     <View style={styles.header}>
       <View style={styles.container}>
-        {renderLabelRegion()}
         <Dropdown
           style={[styles.dropdown, isFocusRegion && { borderColor: "blue" }]}
           placeholderStyle={styles.placeholderStyle}
           selectedTextStyle={styles.selectedTextStyle}
           inputSearchStyle={styles.inputSearchStyle}
           iconStyle={styles.iconStyle}
-          data={data}
+          // data={data}
+          data={regions}
           search
           maxHeight={300}
           labelField="label"
           valueField="value"
-          placeholder={!isFocusRegion ? "Select region" : "..."}
+          placeholder={!isFocusRegion ? valueRegion : "..."}
           searchPlaceholder="Search..."
           value={valueRegion}
           onFocus={() => setIsFocusRegion(true)}
           onBlur={() => setIsFocusRegion(false)}
           onChange={(item) => {
-            setValueRegion(item.value);
+            setValueRegion(item.label);
+            setValueVille(item.villes != [] ? item.villes[0].label : "none");
+            setIdRegion(item.id);
+            setVilles(item.villes);
+            dispatch(getCentersSuccess({ centers: item.villes[0].centers }));
+            dispatch(getVillesSuccess({ villes: item.villes }));
             setIsFocusRegion(false);
           }}
           renderLeftIcon={() => (
@@ -78,25 +101,28 @@ export default function DropdownFilter() {
         />
       </View>
       <View style={styles.container}>
-        {renderLabelVille()}
         <Dropdown
           style={[styles.dropdown, isFocusVille && { borderColor: "blue" }]}
           placeholderStyle={styles.placeholderStyle}
           selectedTextStyle={styles.selectedTextStyle}
           inputSearchStyle={styles.inputSearchStyle}
           iconStyle={styles.iconStyle}
-          data={data}
+          data={villes}
           search
           maxHeight={300}
           labelField="label"
           valueField="value"
-          placeholder={!isFocusVille ? "Select city" : "..."}
+          placeholder={
+            !isFocusVille ? (valueVille ? valueVille : "select ville") : "..."
+          }
           searchPlaceholder="Search..."
           value={valueVille}
           onFocus={() => setIsFocusVille(true)}
           onBlur={() => setIsFocusVille(false)}
           onChange={(item) => {
-            setValueVille(item.value);
+            setValueVille(item.label);
+            setCenters(item.centers);
+            dispatch(getCentersSuccess({ centers: item.centers }));
             setIsFocusVille(false);
           }}
           renderLeftIcon={() => (
@@ -116,14 +142,14 @@ export default function DropdownFilter() {
 const styles = StyleSheet.create({
   /** drop down */
   container: {
-    width: 200,
-    padding: 16,
+    width: WIDTH - 20,
+    paddingVertical: 5,
   },
   dropdown: {
     height: 50,
     borderColor: "gray",
     borderWidth: 0.5,
-    borderRadius: 8,
+    borderRadius: 3,
     paddingHorizontal: 8,
   },
   icon: {
@@ -139,10 +165,10 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   placeholderStyle: {
-    fontSize: 16,
+    fontSize: 14,
   },
   selectedTextStyle: {
-    fontSize: 16,
+    fontSize: 14,
   },
   iconStyle: {
     width: 20,
@@ -150,14 +176,15 @@ const styles = StyleSheet.create({
   },
   inputSearchStyle: {
     height: 40,
-    fontSize: 16,
+    fontSize: 14,
   },
   /** Header */
   header: {
     backgroundColor: "white",
-    flexDirection: "row",
+    // flexDirection: "row",
     alignItems: "center",
-    justifyContent: "flex-start",
+    justifyContent: "center",
+    gap: 5,
     paddingHorizontal: 12,
     paddingTop: 10,
     borderBottomWidth: 1,

@@ -1,3 +1,3 @@
-const HOST_LINK = `https://5b5f-105-73-96-220.ngrok-free.app`;
+const HOST_LINK = `https://e352-105-133-44-62.ngrok-free.app`;
 
 export default HOST_LINK;

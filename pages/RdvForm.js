@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   StyleSheet,
   SafeAreaView,
@@ -10,15 +10,69 @@ import {
 import NavBarNoSearch from "../components/NavBarNoSearch";
 import RNDateTimePicker from "@react-native-community/datetimepicker";
 import { Fontisto } from "@expo/vector-icons";
+import axios from "axios";
+import HOST_LINK from "../constants/constants";
+import { useDispatch, useSelector } from "react-redux";
+import { addRdv, updateTotalBlood } from "../redux/slices/userSlice";
 
-const creneaux = [9, 10, 11, 12, 14, 15, 16, 17];
+// const creneaux = [9, 10, 11, 12, 14, 15, 16, 17];
 
 export default function RdvForm({ route, navigation }) {
+  const user = useSelector((state) => state.user);
+  const dispatch = useDispatch();
   const [showDate, setShowDate] = useState(false);
   const [date, setDate] = useState(new Date());
-  const [hour, setHour] = useState(9);
+  const [crenau, setCrenau] = useState({ id: 1, hour: 9 });
+  const [crenaux, setCrenaux] = useState([]);
   const { params } = route;
-  const { backto } = params;
+  const { backto, centerId } = params;
+
+  async function getCrenaux() {
+    try {
+      const res = await axios.get(`${HOST_LINK}/rdvs/crenaux`, {
+        headers: {
+          Authorization: `Bearer ${user.access_token}`,
+        },
+      });
+      setCrenaux(res.data);
+    } catch (err) {}
+  }
+
+  async function handleAddCrenaux() {
+    try {
+      axios
+        .post(
+          `${HOST_LINK}/rdvs`,
+          {
+            date: `${date.getFullYear()}-${
+              date.getMonth() + 1
+            }-${date.getDate()}`,
+            userId: user.id,
+            centerId,
+            crenauId: crenau.id,
+          },
+          {
+            headers: {
+              Authorization: `Bearer ${user.access_token}`,
+            },
+          }
+        )
+        .then((res) => {
+          dispatch(addRdv({ rdvs: [res.data, ...user.rdvs] }));
+          dispatch(updateTotalBlood({total_blood:user.total_blood+1000}))
+          navigation.navigate(backto ? backto : "RDVs");
+        })
+        .catch((err) => {
+          console.error(err.response.data);
+        });
+    } catch (error) {
+      console.error(error.message);
+    }
+  }
+
+  useEffect(() => {
+    getCrenaux();
+  }, [date]);
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: "#fff" }}>
@@ -47,9 +101,9 @@ export default function RdvForm({ route, navigation }) {
                 {date
                   ? `${date.getDate()}/${
                       date.getMonth() + 1
-                    }/${date.getFullYear()} at ${
-                      hour < 10 ? "0" : ""
-                    }${hour}:00`
+                    }/${date.getFullYear()} at ${crenau.hour < 10 ? "0" : ""}${
+                      crenau.hour
+                    }:00`
                   : "choose a Date"}
               </Text>
               {showDate && (
@@ -70,12 +124,12 @@ export default function RdvForm({ route, navigation }) {
             choose an hour
           </Text>
           <View style={styles.hours}>
-            {creneaux.map((creneau, index) => {
+            {crenaux.map(({ id, hour }, index) => {
               return (
                 <TouchableOpacity
                   key={index}
                   onPress={() => {
-                    setHour(creneau);
+                    setCrenau({ id, hour });
                   }}
                 >
                   <View
@@ -83,16 +137,16 @@ export default function RdvForm({ route, navigation }) {
                       styles.hourInput,
                       {
                         backgroundColor:
-                          creneau == hour ? "#354575" : "#f4f4f4",
+                          id == crenau.id ? "#354575" : "#f4f4f4",
                       },
                     ]}
                   >
                     <Text
                       style={[
                         styles.hourLabel,
-                        { color: creneau == hour ? "#f4f4f4" : "#555" },
+                        { color: id == crenau.id ? "#f4f4f4" : "#555" },
                       ]}
-                    >{`${creneau < 10 ? 0 : ""}${creneau}:00`}</Text>
+                    >{`${hour < 10 ? 0 : ""}${hour}:00`}</Text>
                   </View>
                 </TouchableOpacity>
               );
@@ -101,11 +155,11 @@ export default function RdvForm({ route, navigation }) {
           <View style={styles.formAction}>
             <TouchableOpacity
               onPress={() => {
-                navigation.navigate(backto ? backto : "RDVs");
+                handleAddCrenaux();
               }}
             >
               <View style={styles.btn}>
-                <Text style={styles.btnText}>update</Text>
+                <Text style={styles.btnText}>add rendez-vous</Text>
               </View>
             </TouchableOpacity>
           </View>

@@ -12,7 +12,6 @@ import { useDispatch, useSelector } from "react-redux";
 import {
   signupFailure,
   signupStart,
-  signupSuccess,
 } from "../redux/slices/userSlice";
 import axios from "axios";
 import HOST_LINK from "../constants/constants";
@@ -40,7 +39,6 @@ export default function Signup({ navigation }) {
           ...form,
         })
         .then((response) => {
-          dispatch(signupSuccess(response.data));
           setForm({
             email: "",
             password: "",
